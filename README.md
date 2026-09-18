@@ -180,6 +180,21 @@ buat grup Telegram, masukkan bot-nya sebagai anggota, kirim 1 pesan apapun di
 grup itu, lalu ulangi langkah 5 — nanti muncul chat ID grup (biasanya diawali
 tanda minus, misal `-1001234567890`), pakai itu sebagai `TELEGRAM_CHAT_ID`.
 
+### Kirim ke lebih dari satu orang (multi-user)
+
+`TELEGRAM_CHAT_ID` boleh diisi lebih dari satu, **dipisah koma** — boleh
+campur chat pribadi & grup dalam satu env var yang sama:
+
+```
+TELEGRAM_CHAT_ID=111111111,-1001234567890,222222222
+```
+
+Setiap penerima harus tetap ikuti langkah 4 & 5 di atas masing-masing
+(chat duluan ke bot untuk dapat chat ID-nya sendiri) sebelum ID-nya
+ditambahkan ke daftar. Notifikasi dikirim ke semua penerima secara
+bersamaan — kalau salah satu gagal (misal bot pernah di-block orang itu),
+penerima lain tetap dapat notifikasinya seperti biasa.
+
 ## Struktur data
 
 Semua agenda (termasuf metadata lampiran) disimpan dalam satu blob JSON di
