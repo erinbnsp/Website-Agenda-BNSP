@@ -66,6 +66,8 @@ command** dikosongkan waktu setup awal.
 | `JWT_SECRET` | string acak panjang, WAJIB diisi sendiri |
 | `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64` | opsional — lihat bagian "Sinkronisasi ke Google Sheets" |
 | `GOOGLE_SHEET_ID` | opsional — lihat bagian "Sinkronisasi ke Google Sheets" |
+| `TELEGRAM_BOT_TOKEN` | opsional — lihat bagian "Notifikasi Telegram" |
+| `TELEGRAM_CHAT_ID` | opsional — lihat bagian "Notifikasi Telegram" |
 
 Username tetap `lisa` dan `amir` (huruf kecil).
 
@@ -125,6 +127,58 @@ Kalau muncul error di Function log seperti `DECODER routines::unsupported`
 atau `error:1E08010C`, itu tandanya `private_key` rusak formatnya — pastikan
 pakai cara base64 di atas (bukan copy-paste `private_key` mentah ke kotak
 teks), karena itu memang penyebab paling umum error ini.
+
+## Notifikasi Telegram (fitur baru)
+
+Setiap Lisa membuat **agenda baru**, bot Telegram otomatis mengirim pesan ke
+Pak Kaset berisi ringkasan agendanya (tanggal, jam, asal surat, keterangan,
+disposisi, no. surat) + tombol **"📂 Buka Website Agenda"** yang langsung
+membuka website ini di HP-nya.
+
+Sama seperti sinkronisasi Sheets, sifatnya **best-effort** — kalau belum
+di-setup atau Telegram sedang bermasalah, agenda tetap berhasil dibuat,
+cuma notifikasinya yang dilewati.
+
+### Catatan teknis: kenapa ini bisa jalan di Netlify
+
+Bot Telegram punya 2 mode: *polling* (bot nongkrong terus menunggu pesan
+masuk — TIDAK bisa di serverless) dan *mengirim pesan keluar* (cuma 1
+panggilan HTTPS biasa — BISA di serverless). Karena kebutuhannya cuma
+memberi tahu satu arah, kita pakai mode kedua. Jadi tidak perlu server yang
+hidup 24 jam, dan tidak perlu pindah dari Netlify.
+
+Konsekuensinya: bot ini **tidak bisa membalas** kalau di-chat. Itu tidak
+masalah untuk kebutuhan sekarang, tapi kalau nanti mau bot yang interaktif
+(misal Pak Kaset bisa balas "sudah dibaca" dari Telegram), itu perlu
+pendekatan berbeda (*webhook*) — bisa dikerjakan lain waktu kalau dibutuhkan.
+
+### Cara setup
+
+1. Buka Telegram, cari dan chat **@BotFather**.
+2. Kirim `/newbot` → ikuti instruksinya (isi nama bot bebas, lalu username
+   bot harus berakhiran `bot`, misal `AgendaSekretariatBot`).
+3. BotFather akan memberi **token** (bentuknya seperti
+   `123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxx`) — simpan, ini untuk
+   `TELEGRAM_BOT_TOKEN`.
+4. **Pak Kaset harus chat bot itu duluan minimal sekali** (cari username
+   botnya di Telegram, klik Start / kirim "halo"). Ini wajib — Telegram
+   melarang bot mengirim pesan ke orang yang belum pernah memulai chat.
+5. Ambil **Chat ID** Pak Kaset: buka alamat berikut di browser (ganti
+   `<TOKEN>` dengan token dari langkah 3):
+   ```
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   ```
+   Cari bagian `"chat":{"id":123456789,` — angka itulah `TELEGRAM_CHAT_ID`.
+   Kalau hasilnya kosong (`"result":[]`), berarti langkah 4 belum dilakukan.
+6. Di Netlify → Site configuration → Environment variables, tambahkan:
+   - `TELEGRAM_BOT_TOKEN` = token dari langkah 3
+   - `TELEGRAM_CHAT_ID` = angka dari langkah 5
+7. Trigger deploy ulang, lalu test dengan membuat 1 agenda baru sebagai Lisa.
+
+**Tips:** kalau nanti mau notifikasinya masuk ke grup (bukan chat pribadi),
+buat grup Telegram, masukkan bot-nya sebagai anggota, kirim 1 pesan apapun di
+grup itu, lalu ulangi langkah 5 — nanti muncul chat ID grup (biasanya diawali
+tanda minus, misal `-1001234567890`), pakai itu sebagai `TELEGRAM_CHAT_ID`.
 
 ## Struktur data
 

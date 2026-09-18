@@ -2,6 +2,7 @@ const { connectLambda } = require("@netlify/blobs");
 const { requireUser } = require("../lib/auth");
 const { readState, writeState } = require("../lib/db");
 const { upsertAgendaRow } = require("../lib/sheets");
+const { notifyAgendaBaru } = require("../lib/telegram");
 
 const VALID_TAGS = [
   "Dipelajari/Dicermati",
@@ -74,7 +75,14 @@ exports.handler = async (event) => {
       };
       state.agenda.push(item);
       await writeState(state);
-      await upsertAgendaRow(item); // sinkron ke Google Sheets (best-effort, diam-diam dilewati kalau belum di-setup)
+
+      // Sinkron Sheets & notifikasi Telegram dijalankan BERSAMAAN (bukan antri satu-satu)
+      // — keduanya panggilan jaringan yang saling independen, jadi total waktunya
+      // jadi sepanjang yang paling lama saja, bukan penjumlahan keduanya.
+      // Keduanya best-effort: kalau gagal, agenda tetap sudah tersimpan.
+      const siteUrl = process.env.URL || `https://${event.headers.host || ""}`;
+      await Promise.all([upsertAgendaRow(item), notifyAgendaBaru(item, siteUrl)]);
+
       return json(201, { item });
     }
 

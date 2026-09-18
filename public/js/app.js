@@ -205,14 +205,42 @@ async function showApp() {
   document.getElementById("avatarInitial").textContent = (state.user.name || "?").charAt(0).toUpperCase();
 
   await refreshAgendaView();
+  startStatsPolling();
+}
 
-  // Cek berkala (tiap 20 detik) supaya badge notifikasi & angka statistik ikut
-  // update otomatis kalau ada agenda baru yang ditambahkan orang lain, tanpa
-  // perlu reload manual. Dipasang sekali saja walau showApp() sempat terpanggil ulang.
-  if (!state._statsPollingStarted) {
-    state._statsPollingStarted = true;
-    setInterval(loadStats, 20000);
-  }
+// Cek berkala supaya badge notifikasi & angka statistik ikut update otomatis
+// kalau ada agenda baru dari orang lain, tanpa perlu reload manual.
+//
+// Optimasi: polling DIHENTIKAN saat tab tidak sedang dilihat (pindah tab, HP
+// dikunci, browser diminimize) dan dilanjutkan lagi begitu kembali dibuka —
+// plus langsung refresh sekali saat itu juga supaya datanya tetap terasa
+// instan. Ini menghemat banyak pemanggilan function Netlify (yang kena kuota)
+// dari tab yang cuma dibiarkan terbuka tanpa dilihat.
+function startStatsPolling() {
+  if (state._statsPollingStarted) return;
+  state._statsPollingStarted = true;
+
+  const INTERVAL_MS = 20000;
+
+  const start = () => {
+    if (state._statsPollingTimer) return;
+    state._statsPollingTimer = setInterval(loadStats, INTERVAL_MS);
+  };
+  const stop = () => {
+    clearInterval(state._statsPollingTimer);
+    state._statsPollingTimer = null;
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stop();
+    } else {
+      loadStats(); // langsung sinkron begitu tab dibuka lagi, tidak menunggu interval berikutnya
+      start();
+    }
+  });
+
+  if (!document.hidden) start();
 }
 
 // ---------- View mode ----------

@@ -44,7 +44,17 @@ function isConfigured() {
   return !!(getServiceAccountCredentials() && process.env.GOOGLE_SHEET_ID);
 }
 
+// Cache di level modul: Netlify sering memakai ulang container yang sudah "hangat"
+// untuk request berikutnya, dan isi modul ikut bertahan. Dengan menyimpan hasil
+// autentikasi + info spreadsheet di sini, request berikutnya tidak perlu
+// autentikasi & loadInfo() ulang (2 panggilan jaringan ke Google) — cukup langsung
+// baca/tulis baris. Data barisnya sendiri TETAP diambil fresh tiap kali lewat
+// getRows(), jadi tidak ada resiko data basi.
+let cachedSheet = null;
+
 async function getSheet() {
+  if (cachedSheet) return cachedSheet;
+
   const creds = getServiceAccountCredentials();
   if (!creds || !process.env.GOOGLE_SHEET_ID) return null;
 
@@ -71,6 +81,8 @@ async function getSheet() {
       await sheet.setHeaderRow(HEADER);
     }
   }
+
+  cachedSheet = sheet;
   return sheet;
 }
 
