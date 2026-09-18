@@ -135,6 +135,25 @@ Pak Kaset berisi ringkasan agendanya (tanggal, jam, asal surat, keterangan,
 disposisi, no. surat) + tombol **"📂 Buka Website Agenda"** yang langsung
 membuka website ini di HP-nya.
 
+### Link notifikasi selalu masuk ke akun yang tepat
+
+Tombol di notifikasi mengarah ke `.../?u=amir`. Saat dibuka, website mengecek
+siapa yang sedang login di HP itu:
+
+- Belum login → tampil layar login dengan username `amir` **sudah terisi**,
+  tinggal ketik password.
+- Sedang login sebagai orang lain (misal sisa testing pakai akun Lisa) →
+  sesi itu dikeluarkan dulu, lalu tampil layar login seperti di atas.
+- Sudah login sebagai `amir` → langsung masuk, tidak ditanya apa-apa.
+
+**Kenapa masih perlu ketik password, tidak langsung masuk otomatis?**
+Karena pesan Telegram bisa di-forward atau HP-nya dipinjam orang lain. Kalau
+link-nya bisa membuka akun tanpa password, siapapun yang memegang link itu
+bisa ikut membaca seluruh agenda & dokumen di dalamnya. Password tetap
+diminta, tapi username sudah diisikan supaya tetap cepat — dan sesi login
+bertahan 12 jam, jadi tidak perlu mengetik password setiap kali ada
+notifikasi baru.
+
 Sama seperti sinkronisasi Sheets, sifatnya **best-effort** — kalau belum
 di-setup atau Telegram sedang bermasalah, agenda tetap berhasil dibuat,
 cuma notifikasinya yang dilewati.

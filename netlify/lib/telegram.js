@@ -49,6 +49,27 @@ async function sendMessage(chatId, text, buttonUrl, buttonLabel) {
   }
 }
 
+// Nama hari & bulan dalam Bahasa Indonesia, supaya pesan notifikasi enak dibaca
+// ("Kamis, 18 September 2026") bukan sekadar "2026-09-18".
+const NAMA_HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const NAMA_BULAN = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+function formatTanggalIndo(tanggalStr) {
+  const d = new Date(`${tanggalStr}T00:00:00`);
+  if (isNaN(d.getTime())) return tanggalStr; // jaga-jaga kalau formatnya tidak terduga
+  return `${NAMA_HARI[d.getDay()]}, ${d.getDate()} ${NAMA_BULAN[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Keterangan panjang dipotong supaya notifikasi tetap ringkas & enak dibaca di HP —
+// detail lengkapnya tetap bisa dilihat dengan membuka websitenya.
+function ringkas(teks, maksimal = 160) {
+  const t = String(teks || "").trim();
+  return t.length > maksimal ? `${t.slice(0, maksimal).trimEnd()}…` : t;
+}
+
 // Dipanggil setelah agenda baru berhasil dibuat.
 async function notifyAgendaBaru(item, siteUrl) {
   try {
@@ -57,23 +78,44 @@ async function notifyAgendaBaru(item, siteUrl) {
       return;
     }
 
-    const disposisi = (item.tags || []).join(", ");
+    const disposisi = (item.tags || []).join(" • ");
     const lines = [
-      "*Agenda Baru*",
+      "🔔 *AGENDA BARU*",
+      "━━━━━━━━━━━━━━━",
       "",
-      `📅 ${escapeMarkdown(item.tanggal)} · ${escapeMarkdown(item.jam)}`,
-      `📨 Asal Surat: *${escapeMarkdown(item.asalSurat)}*`,
-      `📝 ${escapeMarkdown(item.keterangan)}`,
+      `🗓 *${escapeMarkdown(formatTanggalIndo(item.tanggal))}*`,
+      `🕐 Pukul *${escapeMarkdown(item.jam)}* WIB`,
+      "",
+      `🏛 *Asal Surat*`,
+      `${escapeMarkdown(item.asalSurat)}`,
+      "",
+      `📝 *Keterangan*`,
+      `${escapeMarkdown(ringkas(item.keterangan))}`,
     ];
-    if (disposisi) lines.push(`🏷️ ${escapeMarkdown(disposisi)}`);
-    if (item.noSurat) lines.push(`✉️ No\\. Surat: ${escapeMarkdown(item.noSurat)}`);
+
+    if (disposisi) {
+      lines.push("", `🏷 *Disposisi*`, `${escapeMarkdown(disposisi)}`);
+    }
+
+    const nomor = [];
+    if (item.noSurat) nomor.push(`No\\. Surat: ${escapeMarkdown(item.noSurat)}`);
+    if (item.noDisposisi) nomor.push(`No\\. Disposisi: ${escapeMarkdown(item.noDisposisi)}`);
+    if (nomor.length) lines.push("", ...nomor.map((n) => `📄 ${n}`));
+
+    lines.push("", "━━━━━━━━━━━━━━━", `_Dibuat oleh ${escapeMarkdown(item.createdByName || "Sekretaris")}_`);
+
     const text = lines.join("\n");
+
+    // Link diberi penanda "?u=amir" supaya begitu dibuka, websitenya memastikan
+    // yang masuk adalah akun Kepala Sekretariat — bukan akun lain yang mungkin
+    // masih tertinggal login di HP itu.
+    const linkTujuan = `${siteUrl.replace(/\/$/, "")}/?u=amir`;
 
     // Dikirim ke semua penerima SEKALIGUS (bukan antri satu-satu) — dan kalau
     // salah satu chat ID bermasalah (misal bot di-block orang itu), penerima
     // lain tetap dapat notifikasinya, tidak ikut gagal semua.
     const chatIds = getChatIds();
-    const results = await Promise.allSettled(chatIds.map((id) => sendMessage(id, text, siteUrl, "📂 Buka Website Agenda")));
+    const results = await Promise.allSettled(chatIds.map((id) => sendMessage(id, text, linkTujuan, "📂 Buka Agenda Sekretariat")));
     const failed = results.filter((r) => r.status === "rejected");
 
     if (failed.length > 0) {

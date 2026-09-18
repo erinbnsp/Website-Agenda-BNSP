@@ -179,23 +179,52 @@ async function loadStats() {
 
 // ---------- Bootstrap ----------
 async function boot() {
+  // Link dari notifikasi Telegram membawa penanda "?u=amir" — artinya link ini
+  // ditujukan untuk akun tertentu. Kalau di HP itu ternyata sedang login sebagai
+  // orang lain (misal sisa testing pakai akun Lisa), sesi itu dikeluarkan dulu
+  // lalu ditampilkan layar login dengan username yang sudah terisi otomatis,
+  // supaya tidak salah masuk ke akun orang lain.
+  const targetUser = new URLSearchParams(window.location.search).get("u");
+
   try {
     const { user } = await api("/api/me");
+
+    if (targetUser && user.username !== targetUser.toLowerCase()) {
+      await api("/api/logout", "POST").catch(() => {});
+      state.user = null;
+      showLogin(targetUser);
+      return;
+    }
+
     state.user = user;
     showApp();
   } catch {
-    showLogin();
+    showLogin(targetUser);
   }
 }
 
-function showLogin() {
+function showLogin(prefillUsername) {
   document.getElementById("loginView").classList.remove("hidden");
   document.getElementById("appView").classList.add("hidden");
+
+  if (prefillUsername) {
+    const userField = document.getElementById("loginUsername");
+    userField.value = prefillUsername.toLowerCase();
+    // Langsung fokus ke kolom password karena username sudah terisi
+    document.getElementById("loginPassword").focus();
+  }
 }
 
 async function showApp() {
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("appView").classList.remove("hidden");
+
+  // Bersihkan penanda "?u=..." dari alamat setelah berhasil masuk, supaya kalau
+  // halaman di-refresh nanti tidak memicu pengecekan akun berulang-ulang.
+  if (window.location.search.includes("u=")) {
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+
   document.getElementById("userName").textContent = state.user.name;
   document.getElementById("userRole").textContent = roleLabel(state.user.role);
   document.getElementById("addAgendaBtn").classList.toggle("hidden", state.user.role !== "sekretaris");
@@ -245,15 +274,19 @@ function startStatsPolling() {
 
 // ---------- View mode ----------
 async function refreshAgendaView() {
+  // Satu kali ambil data dipakai bareng untuk statistik DAN daftar agenda.
+  // Sebelumnya tampilan "Per Tanggal" menembak 2 permintaan terpisah
+  // (satu untuk statistik, satu lagi khusus tanggal itu) padahal data harian
+  // itu sudah termasuk di dalam data lengkapnya — tinggal disaring di sisi
+  // browser. Karena "Per Tanggal" adalah halaman default & tombol ‹ › sering
+  // dipakai, ini memangkas separuh permintaan di pemakaian sehari-hari.
+  const { items } = await api("/api/agenda");
+  computeAndRenderStats(items);
+
   if (state.viewMode === "list") {
-    // 1x fetch dipakai bareng untuk statistik & daftar agenda — sebelumnya masing-masing
-    // fetch sendiri-sendiri padahal query-nya identik (optimasi: separuh jumlah request).
-    const { items } = await api("/api/agenda");
-    computeAndRenderStats(items);
     renderAgendaList(items);
   } else {
-    loadStats();
-    await loadAgenda();
+    renderAgendaDaily(items);
   }
 }
 
@@ -289,10 +322,10 @@ function scrollToTodayOrNearest(behavior) {
 }
 
 // ---------- Daily view ----------
-async function loadAgenda() {
+function renderAgendaDaily(allItems) {
   document.getElementById("dateLabel").textContent = fmtDateLabel(state.currentDate);
-  const { items: rawItems } = await api(`/api/agenda?tanggal=${fmtDate(state.currentDate)}`);
-  const items = filterItems(rawItems);
+  const tanggalAktif = fmtDate(state.currentDate);
+  const items = filterItems(allItems.filter((i) => i.tanggal === tanggalAktif));
   const grid = document.getElementById("agendaGrid");
   const empty = document.getElementById("emptyState");
   grid.innerHTML = "";
@@ -678,7 +711,7 @@ document.getElementById("jumpTodayBtn").addEventListener("click", () => {
 
 document.getElementById("prevDay").addEventListener("click", () => {
   state.currentDate.setDate(state.currentDate.getDate() - 1);
-  refreshAgendaView(); // pakai ini (bukan loadAgenda() langsung) supaya statistik ikut dihitung ulang untuk tanggal barunya
+  refreshAgendaView(); // statistik ikut dihitung ulang untuk tanggal barunya
 });
 document.getElementById("nextDay").addEventListener("click", () => {
   state.currentDate.setDate(state.currentDate.getDate() + 1);
