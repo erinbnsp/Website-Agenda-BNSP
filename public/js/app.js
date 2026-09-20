@@ -184,7 +184,17 @@ async function boot() {
   // orang lain (misal sisa testing pakai akun Lisa), sesi itu dikeluarkan dulu
   // lalu ditampilkan layar login dengan username yang sudah terisi otomatis,
   // supaya tidak salah masuk ke akun orang lain.
-  const targetUser = new URLSearchParams(window.location.search).get("u");
+  const params = new URLSearchParams(window.location.search);
+  const targetUser = params.get("u");
+
+  // Link dari kolom "Dokumen" di Google Sheets membawa "?agendaId=X&fileId=Y" —
+  // begitu berhasil masuk, popup PDF file itu langsung dibuka otomatis
+  // (disimpan dulu di state, dipakai nanti setelah showApp() selesai memuat data).
+  const deepAgendaId = params.get("agendaId");
+  const deepFileId = params.get("fileId");
+  if (deepAgendaId && deepFileId) {
+    state.pendingFileDeepLink = { agendaId: deepAgendaId, fileId: deepFileId };
+  }
 
   try {
     const { user } = await api("/api/me");
@@ -219,9 +229,9 @@ async function showApp() {
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("appView").classList.remove("hidden");
 
-  // Bersihkan penanda "?u=..." dari alamat setelah berhasil masuk, supaya kalau
-  // halaman di-refresh nanti tidak memicu pengecekan akun berulang-ulang.
-  if (window.location.search.includes("u=")) {
+  // Bersihkan penanda "?u=...", "?agendaId=...", "?fileId=..." dari alamat setelah
+  // berhasil masuk, supaya kalau halaman di-refresh nanti tidak memicu ulang.
+  if (window.location.search) {
     window.history.replaceState({}, "", window.location.pathname);
   }
 
@@ -235,6 +245,29 @@ async function showApp() {
 
   await refreshAgendaView();
   startStatsPolling();
+
+  if (state.pendingFileDeepLink) {
+    const { agendaId, fileId } = state.pendingFileDeepLink;
+    state.pendingFileDeepLink = null;
+    openDeepLinkedAttachment(agendaId, fileId);
+  }
+}
+
+// Dipanggil saat website dibuka lewat link dari kolom "Dokumen" di Google Sheets —
+// ambil detail agenda-nya, cari lampiran yang dimaksud, lalu langsung buka
+// popup PDF viewer yang sama seperti tombol "Lihat" di kartu agenda.
+async function openDeepLinkedAttachment(agendaId, fileId) {
+  try {
+    const { item } = await api(`/api/agenda-item?id=${agendaId}`);
+    const attachment = (item.attachments || []).find((a) => a.id === fileId);
+    if (!attachment) {
+      toast("File yang dituju sudah tidak ada (mungkin sudah dihapus)");
+      return;
+    }
+    openPdfViewer(item, attachment);
+  } catch (e) {
+    toast("Gagal membuka file: " + e.message);
+  }
 }
 
 // Cek berkala supaya badge notifikasi & angka statistik ikut update otomatis
@@ -680,6 +713,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const { user } = await api("/api/login", "POST", {
       username: document.getElementById("loginUsername").value.trim(),
       password: document.getElementById("loginPassword").value,
+      remember: document.getElementById("rememberMeChk").checked,
     });
     state.user = user;
     showApp();
@@ -840,6 +874,20 @@ document.getElementById("searchInput").addEventListener("input", (e) => {
     state.searchQuery = value;
     refreshAgendaView();
   }, 300);
+});
+
+// ---------- Tampilkan/sembunyikan password ----------
+document.getElementById("passwordToggleBtn").addEventListener("click", () => {
+  const input = document.getElementById("loginPassword");
+  const btn = document.getElementById("passwordToggleBtn");
+  const sedangDitampilkan = input.type === "text";
+
+  input.type = sedangDitampilkan ? "password" : "text";
+  btn.textContent = sedangDitampilkan ? "👁" : "🙈";
+  btn.setAttribute("aria-label", sedangDitampilkan ? "Tampilkan password" : "Sembunyikan password");
+  btn.classList.toggle("showing", !sedangDitampilkan);
+
+  input.focus(); // fokus balik ke kolomnya, bukan ke tombol mata — enak lanjut ngetik
 });
 
 boot();

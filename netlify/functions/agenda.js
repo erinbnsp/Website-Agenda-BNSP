@@ -81,7 +81,7 @@ exports.handler = async (event) => {
       // jadi sepanjang yang paling lama saja, bukan penjumlahan keduanya.
       // Keduanya best-effort: kalau gagal, agenda tetap sudah tersimpan.
       const siteUrl = process.env.URL || `https://${event.headers.host || ""}`;
-      await Promise.all([upsertAgendaRow(item), notifyAgendaBaru(item, siteUrl)]);
+      await Promise.all([upsertAgendaRow(item, siteUrl), notifyAgendaBaru(item, siteUrl)]);
 
       return json(201, { item });
     }

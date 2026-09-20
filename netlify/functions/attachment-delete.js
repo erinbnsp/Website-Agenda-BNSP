@@ -38,7 +38,8 @@ exports.handler = async (event) => {
     item.attachments = (item.attachments || []).filter((f) => f.id !== fileId);
     await writeState(state);
     await filesStore().delete(fileId);
-    await upsertAgendaRow(item); // kolom "Dokumen" di Google Sheets ikut ter-update
+    const siteUrl = process.env.URL || `https://${event.headers.host || ""}`;
+    await upsertAgendaRow(item, siteUrl); // kolom "Dokumen" di Google Sheets ikut ter-update (link ke file berikutnya, atau kosong kalau habis)
 
     return json(200, { ok: true });
   } catch (err) {

@@ -86,7 +86,23 @@ async function getSheet() {
   return sheet;
 }
 
-function rowValuesFromItem(item) {
+function rowValuesFromItem(item, siteUrl) {
+  const attachments = item.attachments || [];
+  let dokumenValue = "";
+
+  if (attachments.length > 0) {
+    const utama = attachments[0];
+    const linkTujuan = `${siteUrl.replace(/\/$/, "")}/?agendaId=${item.id}&fileId=${utama.id}`;
+    const label =
+      attachments.length > 1
+        ? `${utama.name} (+${attachments.length - 1} lainnya)`
+        : utama.name;
+    // Tanda kutip di nama file (kalau ada) wajib di-escape jadi "" sesuai
+    // aturan formula Google Sheets, supaya formula HYPERLINK-nya tidak rusak.
+    const labelAman = label.replace(/"/g, '""');
+    dokumenValue = `=HYPERLINK("${linkTujuan}", "${labelAman}")`;
+  }
+
   return {
     ID: String(item.id),
     Tanggal: item.tanggal,
@@ -96,14 +112,14 @@ function rowValuesFromItem(item) {
     Disposisi: (item.tags || []).join(", "),
     "No. Disposisi": item.noDisposisi || "",
     "No. Surat": item.noSurat || "",
-    Dokumen: (item.attachments || []).map((a) => a.name).join(", "),
+    Dokumen: dokumenValue,
   };
 }
 
 // Buat baris baru kalau agenda ini belum pernah disinkronkan, atau update baris
 // yang sudah ada (dicocokkan lewat kolom ID) kalau sudah pernah — dipakai untuk
 // create, edit, maupun setelah upload dokumen (supaya kolom Dokumen ikut update).
-async function upsertAgendaRow(item) {
+async function upsertAgendaRow(item, siteUrl) {
   try {
     if (!isConfigured()) {
       console.warn("[sheets] Belum dikonfigurasi (cek GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 dan GOOGLE_SHEET_ID di Environment Variables) — sinkronisasi dilewati.");
@@ -114,7 +130,7 @@ async function upsertAgendaRow(item) {
 
     const rows = await sheet.getRows();
     const existing = rows.find((r) => r.get("ID") === String(item.id));
-    const values = rowValuesFromItem(item);
+    const values = rowValuesFromItem(item, siteUrl);
 
     if (existing) {
       Object.entries(values).forEach(([key, val]) => existing.set(key, val));

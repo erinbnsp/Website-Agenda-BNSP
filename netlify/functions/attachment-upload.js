@@ -88,7 +88,8 @@ exports.handler = async (event) => {
     };
     item.attachments.push(entry);
     await writeState(state);
-    await upsertAgendaRow(item); // kolom "Dokumen" di Google Sheets ikut ter-update
+    const siteUrl = process.env.URL || `https://${event.headers.host || ""}`;
+    await upsertAgendaRow(item, siteUrl); // kolom "Dokumen" di Google Sheets ikut ter-update (jadi link ke file barunya)
 
     return json(201, { attachment: entry, item });
   } catch (err) {

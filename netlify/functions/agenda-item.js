@@ -72,7 +72,8 @@ exports.handler = async (event) => {
       if (body.noSurat !== undefined) item.noSurat = String(body.noSurat).trim();
       if (body.status && VALID_STATUS.includes(body.status)) item.status = body.status;
       await writeState(state);
-      await upsertAgendaRow(item); // sinkron perubahan ke Google Sheets juga
+      const siteUrl = process.env.URL || `https://${event.headers.host || ""}`;
+      await upsertAgendaRow(item, siteUrl); // sinkron perubahan ke Google Sheets juga
       return json(200, { item });
     }
 

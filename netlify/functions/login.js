@@ -25,12 +25,20 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: "Username atau password salah" }) };
   }
 
+  // "Ingat Saya": sesi login bertahan 30 hari alih-alih 12 jam. Yang disimpan
+  // TETAP cuma token sesi terenkripsi di cookie (httpOnly, tidak bisa dibaca
+  // JavaScript) — password aslinya sendiri TIDAK PERNAH disimpan di manapun
+  // di sisi browser, supaya tetap aman walau "diingat".
+  const REMEMBER_EXPIRY = 60 * 60 * 24 * 30; // 30 hari
+  const DEFAULT_EXPIRY = 60 * 60 * 12; // 12 jam
+  const expiresInSeconds = body.remember ? REMEMBER_EXPIRY : DEFAULT_EXPIRY;
+
   const user = { username, role: acc.role, name: acc.name };
-  const token = signToken(user);
+  const token = signToken(user, expiresInSeconds);
 
   return {
     statusCode: 200,
-    headers: { "Content-Type": "application/json", "Set-Cookie": setCookieHeader(token) },
+    headers: { "Content-Type": "application/json", "Set-Cookie": setCookieHeader(token, expiresInSeconds) },
     body: JSON.stringify({ user }),
   };
 };

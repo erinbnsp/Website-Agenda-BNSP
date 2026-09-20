@@ -76,7 +76,15 @@ Username tetap `lisa` dan `amir` (huruf kecil).
 Setiap Lisa **membuat agenda**, **mengedit**, **menghapus**, atau **upload/hapus
 PDF**, perubahannya otomatis tersinkron ke satu baris di Google Sheets —
 kolomnya persis field yang Lisa isi: Tanggal, Jam, Asal Surat, Keterangan,
-Disposisi, No. Disposisi, No. Surat, dan Dokumen (nama file yang diupload).
+Disposisi, No. Disposisi, No. Surat, dan Dokumen.
+
+**Kolom Dokumen berupa link yang bisa diklik** — begitu ada file diupload,
+kolom itu otomatis berisi nama filenya sebagai hyperlink. Diklik dari
+spreadsheet, akan membuka website ini dan **langsung memunculkan popup PDF
+viewer** (persis seperti tombol "Lihat" di kartu agenda) — berguna untuk
+verifikasi dokumen langsung dari spreadsheet tanpa perlu cari-cari dulu di
+website. Kalau satu agenda punya lebih dari 1 file, link-nya menuju file
+pertama, dengan keterangan "(+N lainnya)" di teks link-nya.
 
 **Sifatnya opsional & aman** — kalau belum di-setup, fitur ini cuma diam-diam
 tidak aktif, TIDAK bikin aplikasi lain error. Begitu juga kalau nanti Google

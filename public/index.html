@@ -15,7 +15,11 @@
     <label>Username</label>
     <input type="text" id="loginUsername" autocomplete="username" required />
     <label>Password</label>
-    <input type="password" id="loginPassword" autocomplete="current-password" required />
+    <div class="password-field">
+      <input type="password" id="loginPassword" autocomplete="current-password" required />
+      <button type="button" class="password-toggle-btn" id="passwordToggleBtn" aria-label="Tampilkan password" tabindex="-1">👁</button>
+    </div>
+    <label class="remember-me-row"><input type="checkbox" id="rememberMeChk" /> Ingat saya selama 30 hari</label>
     <button type="submit">Masuk</button>
     <p id="loginError" class="error-text hidden"></p>
   </form>
