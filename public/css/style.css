@@ -56,10 +56,6 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 .login-card button:hover { background: var(--blue-dark); }
 .error-text { color: var(--red); font-size: 13px; margin-top: 10px; }
 
-/* ---------- TOPBAR ---------- */
-.topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-.topbar h1 { color: var(--blue-dark); font-size: 22px; margin: 0; letter-spacing: 0.3px; }
-.user-box { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .role-badge { background: #e8edfc; color: var(--blue-dark); padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .ghost-btn { background: #eef2fb; border: 1px solid var(--border); color: var(--blue-dark); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
 .ghost-btn:hover { background: #e0e7fb; }
@@ -77,15 +73,38 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
 }
 
-.view-toggle { display: flex; justify-content: center; gap: 10px; margin: 4px 0 6px; }
-.view-toggle-btn { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--text-mute); font-weight: 600; font-size: 13px; cursor: pointer; }
-.view-toggle-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
-
-.add-btn { display: block; margin: 14px auto 20px; }
-.jump-today-btn { display: block; margin: 0 auto 16px; }
-
 .date-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 6px; }
-.date-label { font-weight: 700; color: var(--blue-dark); font-size: 17px; min-width: 220px; text-align: center; }
+.date-label {
+  font-weight: 700;
+  color: var(--blue-dark);
+  font-size: 17px;
+  min-width: 220px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+}
+.date-label:hover { background: #f1f5fb; border-color: var(--blue); }
+.date-label-icon { font-size: 14px; opacity: 0.7; }
+
+/* Input tanggal asli disembunyikan secara visual tapi tetap berfungsi penuh —
+   dipicu lewat showPicker() saat tombol tanggal di atas diklik, supaya
+   kalender loncat-tahun/bulan bawaan browser bisa dipakai tanpa perlu
+   bikin komponen kalender sendiri dari nol. */
+.date-picker-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 
 .date-group { margin-bottom: 26px; }
 .date-group-header { font-weight: 700; color: var(--text-mute); font-size: 13.5px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px dashed var(--border); }
@@ -96,9 +115,6 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 .agenda-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
 
 .agenda-card { background: #fff; border: 1px solid var(--border); border-left: 5px solid var(--green); border-radius: 10px; padding: 16px 18px; position: relative; }
-.agenda-card.tag-dadakan, .agenda-card.tag-mewakili { border-left-color: var(--red); }
-.agenda-card.tag-ditindaklanjuti { border-left-color: var(--orange); }
-.agenda-card.highlighted { box-shadow: 0 0 0 3px rgba(26,86,219,0.35); }
 
 .agenda-num { color: var(--blue); font-weight: 700; margin-right: 6px; }
 .agenda-time { color: var(--text-mute); font-size: 13px; font-weight: 600; }
@@ -146,8 +162,6 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 .modal-card label { display: block; font-size: 13px; color: var(--text-mute); margin: 10px 0 4px; }
 .modal-card input, .modal-card textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 14px; }
 .modal-card textarea { min-height: 70px; resize: vertical; }
-.checkbox-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-.checkbox-row label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); margin: 0; }
 
 .multiselect { position: relative; margin-top: 4px; }
 .multiselect-trigger {
@@ -203,7 +217,6 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 .pdf-viewer-card { width: min(900px, 92vw); height: min(85vh, 900px); padding: 0; display: flex; flex-direction: column; overflow: hidden; }
 .pdf-viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
 .pdf-viewer-title { font-weight: 600; color: var(--blue-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
-.pdf-viewer-frame { flex: 1 1 auto; width: 100%; border: none; background: #525659; }
 .pdf-viewer-body {
   flex: 1 1 auto;
   overflow-y: auto;

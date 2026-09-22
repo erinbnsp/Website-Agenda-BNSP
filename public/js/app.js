@@ -356,7 +356,7 @@ function scrollToTodayOrNearest(behavior) {
 
 // ---------- Daily view ----------
 function renderAgendaDaily(allItems) {
-  document.getElementById("dateLabel").textContent = fmtDateLabel(state.currentDate);
+  document.getElementById("dateLabelText").textContent = fmtDateLabel(state.currentDate);
   const tanggalAktif = fmtDate(state.currentDate);
   const items = filterItems(allItems.filter((i) => i.tanggal === tanggalAktif));
   const grid = document.getElementById("agendaGrid");
@@ -755,6 +755,29 @@ document.getElementById("todayBtn").addEventListener("click", () => {
   state.currentDate = new Date();
   refreshAgendaView();
 });
+
+// ---------- Klik tanggal -> buka kalender native (bisa loncat bulan/tahun langsung) ----------
+(function setupDatePicker() {
+  const labelBtn = document.getElementById("dateLabel");
+  const picker = document.getElementById("dailyDatePicker");
+
+  labelBtn.addEventListener("click", () => {
+    picker.value = fmtDate(state.currentDate); // buka kalender langsung di tanggal yang lagi aktif
+    if (typeof picker.showPicker === "function") {
+      picker.showPicker();
+    } else {
+      // Browser lama yang belum dukung showPicker() — fallback andalkan interaksi native input-nya sendiri
+      picker.focus();
+      picker.click();
+    }
+  });
+
+  picker.addEventListener("change", () => {
+    if (!picker.value) return;
+    state.currentDate = new Date(`${picker.value}T00:00:00`);
+    refreshAgendaView();
+  });
+})();
 
 // ---------- Sidebar buka/tutup ----------
 document.getElementById("sidebarToggleBtn").addEventListener("click", () => {

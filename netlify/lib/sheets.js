@@ -119,6 +119,30 @@ function rowValuesFromItem(item, siteUrl) {
 // Buat baris baru kalau agenda ini belum pernah disinkronkan, atau update baris
 // yang sudah ada (dicocokkan lewat kolom ID) kalau sudah pernah — dipakai untuk
 // create, edit, maupun setelah upload dokumen (supaya kolom Dokumen ikut update).
+// Khusus AGENDA BARU — langsung tambah baris, TANPA baca seluruh spreadsheet
+// dulu untuk mencari baris yang cocok. Ini aman dipakai di sini karena ID
+// agenda baru sudah pasti belum pernah ada barisnya di spreadsheet manapun.
+// Dipakai di jalur create supaya tidak menunggu pembacaan seluruh isi sheet
+// (yang jadi makin lambat seiring datanya membesar) untuk hal yang hasilnya
+// sudah pasti "tidak ketemu, buat baru saja".
+async function insertAgendaRow(item, siteUrl) {
+  try {
+    if (!isConfigured()) {
+      console.warn("[sheets] Belum dikonfigurasi (cek GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 dan GOOGLE_SHEET_ID di Environment Variables) — sinkronisasi dilewati.");
+      return;
+    }
+    const sheet = await getSheet();
+    if (!sheet) return;
+
+    await sheet.addRow(rowValuesFromItem(item, siteUrl));
+    console.log(`[sheets] Baris agenda #${item.id} berhasil ditambahkan.`);
+  } catch (err) {
+    console.error("[sheets] Gagal sinkron ke Google Sheets:", err.message);
+  }
+}
+
+// Dipakai untuk edit, upload/hapus dokumen, dst — baris agenda-nya MUNGKIN
+// sudah ada di spreadsheet, jadi tetap perlu dicari dulu lewat kolom ID.
 async function upsertAgendaRow(item, siteUrl) {
   try {
     if (!isConfigured()) {
@@ -158,4 +182,4 @@ async function deleteAgendaRow(itemId) {
   }
 }
 
-module.exports = { upsertAgendaRow, deleteAgendaRow, isConfigured };
+module.exports = { insertAgendaRow, upsertAgendaRow, deleteAgendaRow, isConfigured };

@@ -1,7 +1,7 @@
 const { connectLambda } = require("@netlify/blobs");
 const { requireUser } = require("../lib/auth");
 const { readState, writeState } = require("../lib/db");
-const { upsertAgendaRow } = require("../lib/sheets");
+const { insertAgendaRow } = require("../lib/sheets");
 const { notifyAgendaBaru } = require("../lib/telegram");
 
 const VALID_TAGS = [
@@ -81,7 +81,7 @@ exports.handler = async (event) => {
       // jadi sepanjang yang paling lama saja, bukan penjumlahan keduanya.
       // Keduanya best-effort: kalau gagal, agenda tetap sudah tersimpan.
       const siteUrl = process.env.URL || `https://${event.headers.host || ""}`;
-      await Promise.all([upsertAgendaRow(item, siteUrl), notifyAgendaBaru(item, siteUrl)]);
+      await Promise.all([insertAgendaRow(item, siteUrl), notifyAgendaBaru(item, siteUrl)]);
 
       return json(201, { item });
     }
